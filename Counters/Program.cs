@@ -5,40 +5,38 @@ namespace Counters
 {
     internal class Program
     {
-        private static int countChange { get; set; } = 0;
-        public static int TimeChange { get; set; } = 5;
+        private static int _countChange = 0;
+        public static int SecondsToChange { get; set; } = 5;
         public static int CountCounters { get; set; } = 2;
 
         const string token = "jRHApZdHnvpXkv4vLzQXwSWIRhdhbKWBTiHIotQw5VglRK5bBInPfmdUFG8ejLep6dECiX44rOToIh_dYBgzYQ==";
         const string org = "IRZ";
         const string bucket = "data";
+        const string url = "http://localhost:8086";
 
-        static InfluxDBClient? client;
-            
         static async Task Main(string[] args)
         {
             var options = new InfluxDBClientOptions.Builder()
-                .Url("http://localhost:8086")
+                .Url(url)
                 .AuthenticateToken(token.ToCharArray())
                 .Org(org)
                 .Bucket(bucket)
                 .Build();
 
-            client = InfluxDBClientFactory.Create(options);
-            client.SetLogLevel(LogLevel.Body);
+            InfluxDBClient client = InfluxDBClientFactory.Create(options);
 
             while (true)
             {
-                WriteDataCounters(CountCounters); 
-                Thread.Sleep(1000 * TimeChange);
+                WriteDataCounters(client, CountCounters); 
+                Thread.Sleep(1000 * SecondsToChange);
             }
         }
 
-        public static void WriteDataCounters(int count)
+        public static void WriteDataCounters(InfluxDBClient client, int countCounters)
         {
-            Console.WriteLine($"Начало записи данных счётчиков в {bucket} - {countChange}");
+            Console.WriteLine($"Начало записи данных счётчиков в {bucket} - {_countChange}");
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < countCounters; i++)
             {
                 using (var writeApi = client.GetWriteApi())
                 {
@@ -56,8 +54,8 @@ namespace Counters
                 }
             }
 
-            Console.WriteLine($"Окончание записи данных счётчиков в {bucket} - {countChange}\n");
-            countChange++;
+            Console.WriteLine($"Окончание записи данных счётчиков в {bucket} - {_countChange}\n");
+            _countChange++;
         }
 
         private static Indicators SetIndicators(int voltageStart = 180, int voltageEnd = 380, int acStart = 5, int acEnd = 50, int reactEnergyStart = 1, int reactEnergyEnd = 100, int activeEnergyStart = 1, int activeEnergyEnd = 100)
@@ -80,7 +78,6 @@ namespace Counters
             public double reactEnergy;
             public double activeEnergy;
         }
-
 
         [Measurement("count")]
         private class Count
